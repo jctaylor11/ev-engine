@@ -1,5 +1,6 @@
 # ev-engine
-An engine that quantifies expected value of a trade within a holding period, given market state and a risk-reward ratio
+An engine that quantifies expected value of a trade within a holding period, given market state and a risk-reward ratio.
+The project is the formalised production build of the EV engine developed in [algotrader-playground](https://github.com/jctaylor11/algotrader-playground).
 
 ## Architecture
 Modular architecture with separation of concerns for each stage of the pipeline. 
