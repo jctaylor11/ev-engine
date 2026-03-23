@@ -7,10 +7,10 @@ import pandas as pd
 BATCH_LIMIT = 1000
 RATE_LIMIT = 0.3
 
-client = Client(tld="com")
 
-def fetch_binance_ohlcv_all(symbol, interval, start, end):
+def fetch_binance_ohlcv_all(client, symbol, interval, start, end):
     """Return a dataframe of all candlestick data for the specified arguments"""
+
     latest_timestamp = None
 
     # If start is earlier than earliest start, start = earliest start
@@ -27,7 +27,7 @@ def fetch_binance_ohlcv_all(symbol, interval, start, end):
     # Requests the full data batch by batch to adhere to limits
     while True: 
         # Pulls a single batch from the current time cursor (start), up to the limit or 'end' (whichever is first)
-        data_batch = _fetch_binance_ohlcv_batch(symbol, interval, start, end)   # data_batch latest timestamp <= end
+        data_batch = _fetch_binance_ohlcv_batch(client, symbol, interval, start, end)   # data_batch latest timestamp <= end
 
         # data_batch.empty catches the edge of exact-1000 final batch, checking latest_timestamp safeguards against no-progress loops
         if data_batch.empty or latest_timestamp == data_batch.index.max():        
@@ -54,7 +54,7 @@ def fetch_binance_ohlcv_all(symbol, interval, start, end):
     return all_fetched_data
 
 
-def _fetch_binance_ohlcv_batch(symbol, interval, start, end=None):
+def _fetch_binance_ohlcv_batch(client, symbol, interval, start, end=None):
     """Fetch one batch of historical OHLCV data from Binance, up to maximum request size (1000 bars)"""
     time.sleep(RATE_LIMIT)     # To ensure Binance's API rate limits are not violated
 
@@ -81,3 +81,12 @@ def _parse_raw_ohlcv_response(df):
     df.set_index("date", inplace = True)
 
     return df
+
+
+def main():
+    client = Client(tld="com")
+    df = fetch_binance_ohlcv_all(client, "BTCUSDT", "1d", "2020-01-01", "2024-01-01")
+    print(df)
+
+if __name__ == "__main__":
+    main()
