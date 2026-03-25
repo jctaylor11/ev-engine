@@ -1,10 +1,13 @@
-from sqlalchemy import text
 from ingestion.binance_ohlcv import fetch_binance_ohlcv_all
+import pandas as pd
+from sqlalchemy import text
 
-def populate_candles(client, pair, interval, start, end, engine):
+def populate_candles(engine, client, pair, interval, start, end):
     """Populate candles table with candlestick data from Binance"""
     # Fetch and clean data from Binance
     candles_df = fetch_binance_ohlcv_all(client, pair, interval, start, end)
+    candles_df = clean_candles(candles_df)
+    candles_df = format_candles(candles_df)
 
     # Map df columns to sql column names 
     candles_df.reset_index(inplace=True)
@@ -36,3 +39,26 @@ def get_or_create_lookup(conn, table, column, value):
         row_id = conn.execute(text(f"INSERT INTO {table} ({column}) VALUES (:symbol) RETURNING id"), {"symbol": value}).scalar()
     
     return row_id
+
+
+def clean_candles(df):
+    # Remove any duplicates
+    duplicates = df.index.duplicated()
+    df = df[~duplicates]
+    print(f"Duplicates removed: {duplicates.sum()}. (Should be 0 - non-zero suggests logic error)")
+
+    return df
+
+
+def format_candles(df):
+    df.columns = ["open_time", "open", "high", "low", "close", "volume", "close_time", "quote_asset_volume", "num_trades", "taker_buy_base_asset_volume", "taker_buy_quote_asset_volume", "ignore"]
+
+    df["date"] = pd.to_datetime(df["open_time"], unit='ms')
+    df.set_index("date", inplace = True)
+
+    df = df[["open", "high", "low", "close", "volume"]].copy()
+
+    for col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors = "coerce")
+
+    return df
