@@ -1,6 +1,10 @@
-from ingestion.binance_ohlcv import fetch_binance_ohlcv_all
 import pandas as pd
 from sqlalchemy import text
+
+from database.utils import get_or_create_lookup
+from ingestion.binance_ohlcv import fetch_binance_ohlcv_all
+
+
 
 def populate_candles(engine, client, pair, interval, start, end):
     """Populate candles table with candlestick data from Binance"""
@@ -28,17 +32,12 @@ def populate_candles(engine, client, pair, interval, start, end):
         candles_df["pair_id"] = pair_id
         candles_df["interval_id"] = interval_id
 
-        # Insert candles df to postgres
-        candles_df.to_sql('candles', conn, if_exists='append', index=False)
-
-
-def get_or_create_lookup(conn, table, column, value):
-    """Return the id for the value, or create a new id if it doesn't exist"""
-    row_id = conn.execute(text(f"SELECT id FROM {table} WHERE {column} = :symbol;"), {"symbol": value}).scalar()
-    if row_id is None: 
-        row_id = conn.execute(text(f"INSERT INTO {table} ({column}) VALUES (:symbol) RETURNING id"), {"symbol": value}).scalar()
-    
-    return row_id
+        # Insert candles df to postgres unless already entered
+        conn.execute(text("""
+            INSERT INTO candles (open_timestamp, open_price, high_price, low_price, close_price, volume, pair_id, interval_id)
+            VALUES (:open_timestamp, :open_price, :high_price, :low_price, :close_price, :volume, :pair_id, :interval_id)
+            ON CONFLICT (open_timestamp, pair_id, interval_id) DO NOTHING   -- These columns are the UNIQUE constraint
+        """), candles_df.to_dict(orient='records'))
 
 
 def clean_candles(df):
