@@ -220,3 +220,6 @@ raw_ohlcv/
 
 # For throwaway testing scripts
 scratch.py
+
+# Useful queries I've saved
+# *.sql

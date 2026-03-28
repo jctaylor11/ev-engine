@@ -4,9 +4,9 @@ import time
 from binance.client import Client           
 import pandas as pd
 
+
 BATCH_LIMIT = 1000
 RATE_LIMIT = 0.3
-
 
 def fetch_binance_ohlcv_all(client, symbol, interval, start, end):
     """Return a dataframe of all candlestick data for the specified arguments"""

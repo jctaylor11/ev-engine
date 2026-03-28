@@ -45,6 +45,6 @@ def populate_indicator_rsi(engine, rsi_period=14):
                 rsi_value
             FROM rsi
             WHERE row_num > (:rsi_period - 1)
+            ON CONFLICT (candle_id, indicator_id) DO NOTHING
             ;"""), {"indicator_id": indicator_id, "rsi_period": rsi_period})
         
-
