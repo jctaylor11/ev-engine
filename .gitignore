@@ -221,5 +221,5 @@ raw_ohlcv/
 # For throwaway testing scripts
 scratch.py
 
-# Useful queries I've saved
-# *.sql
+# Useful sense check query
+wide_outcomes.sql
