@@ -76,7 +76,8 @@ def get_conditional_query():
             ib.indicator_id, 
             ib.percentile_bin, 
             ibc.bin_candle_count
-        ORDER BY threshold_a;)
+        ORDER BY threshold_a;
     """)
 
     return query
+    
