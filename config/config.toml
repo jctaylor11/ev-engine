@@ -1,5 +1,5 @@
 [data]
 pair = "BTCUSDT"
 interval = "1h"
-start = "2021-01-04"
+start = "2021-01-01"
 end = "2022-01-01"

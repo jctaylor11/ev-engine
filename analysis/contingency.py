@@ -35,15 +35,39 @@ def compute_conditional_probability(df):
     return df
 
 
-def contingency_pivot(df, indicator_id=None, percentile_bin=None):
+def compute_evs(df_outcomes):
+    # To make the function agnostic to marginal or conditional - joins on indicator_id and percentile_bin only if conditional
+    grouping_cols = [c for c in ['indicator_id', 'percentile_bin'] if c in df_outcomes.columns]     
+
+    # Self join to retrieve the P(B before A) by flipping the index on P(A before B)
+    df_joined = df_outcomes.merge(df_outcomes,
+        left_on=['threshold_a', 'threshold_b'] + grouping_cols,
+        right_on=['threshold_b', 'threshold_a'] + grouping_cols,
+        suffixes=['_A', '_B']
+    )
+    df_joined['ev'] = abs(df_joined['threshold_a_A']) * df_joined['probability_A'] + (-abs(df_joined['threshold_b_A']) * df_joined['probability_B'])
+
+    # Restore original column names after merge suffix applied so downstream functions remain agnostic
+    df_joined = df_joined.rename(columns={
+        'threshold_a_A': 'threshold_a',
+        'threshold_b_A': 'threshold_b',
+        **{f"{c}_A": f"{c}" for c in grouping_cols}
+    })
+
+    return df_joined
+
+
+def contingency_pivot(df, values, indicator_id=None, percentile_bin=None):
     """Pivot dataframe to contingency table"""
     if indicator_id is not None and percentile_bin is not None:
         # Filter for the given indicator_id, and then for the given percentile bin
         df = df.loc[df['indicator_id'] == indicator_id]
         df = df.loc[df['percentile_bin'] == percentile_bin] 
 
+    print(df.shape)
+
     # The df is in long format, and therefore pivoted to create a contingency table to count values where row threshold is hit before colum threshold
-    contingency_table = df.pivot_table(index='threshold_a', columns='threshold_b', values='probability')
+    contingency_table = df.pivot_table(index='threshold_a', columns='threshold_b', values=values)
 
     return contingency_table
 

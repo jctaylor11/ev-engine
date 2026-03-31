@@ -5,7 +5,6 @@ from database.utils import get_or_create_lookup
 from ingestion.binance_ohlcv import fetch_binance_ohlcv_all
 
 
-
 def populate_candles(engine, client, pair, interval, start, end):
     """Populate candles table with candlestick data from Binance"""
     # Fetch and clean data from Binance
