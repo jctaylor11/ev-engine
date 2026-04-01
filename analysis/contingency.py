@@ -43,7 +43,8 @@ def compute_evs(df_outcomes):
     df_joined = df_outcomes.merge(df_outcomes,
         left_on=['threshold_a', 'threshold_b'] + grouping_cols,
         right_on=['threshold_b', 'threshold_a'] + grouping_cols,
-        suffixes=['_A', '_B']
+        suffixes=['_A', '_B'],
+        how='left'
     )
     df_joined['ev'] = abs(df_joined['threshold_a_A']) * df_joined['probability_A'] + (-abs(df_joined['threshold_b_A']) * df_joined['probability_B'])
 
@@ -63,8 +64,6 @@ def contingency_pivot(df, values, indicator_id=None, percentile_bin=None):
         # Filter for the given indicator_id, and then for the given percentile bin
         df = df.loc[df['indicator_id'] == indicator_id]
         df = df.loc[df['percentile_bin'] == percentile_bin] 
-
-    print(df.shape)
 
     # The df is in long format, and therefore pivoted to create a contingency table to count values where row threshold is hit before colum threshold
     contingency_table = df.pivot_table(index='threshold_a', columns='threshold_b', values=values)
