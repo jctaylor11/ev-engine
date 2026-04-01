@@ -58,6 +58,14 @@ def compute_evs(df_outcomes):
     return df_joined
 
 
+def contingency_pivot_all_bins(df, indicator_id, number_of_bins, values='ev') -> dict:
+    """Return a dict of contingency tables keyed by percentile bin for a given indicator."""
+    contingencies = {}
+    for bin_n in range(1, number_of_bins + 1):
+        contingencies[bin_n] = contingency_pivot(df, values=values, indicator_id=indicator_id, percentile_bin=bin_n)
+    return contingencies
+
+
 def contingency_pivot(df, values, indicator_id=None, percentile_bin=None):
     """Pivot dataframe to contingency table"""
     if indicator_id is not None and percentile_bin is not None:
