@@ -12,11 +12,11 @@ from visualisation.heatmap import plot_heatmap, plot_heatmap_grid
 HOLDING_PERIOD = 20
 
 INDICATOR_ID = 1
-PERCENTILE_BIN = 8
-N_BINS = 5
+PERCENTILE_BIN = 1
+N_BINS = 10
 
 
-def marginal_ev(holding_period=HOLDING_PERIOD):
+def unconditional_ev(holding_period):
     """Compute and plot unconditional EV for each threshold pair."""
     engine = get_engine()
     query = get_marginal_query()
@@ -25,11 +25,12 @@ def marginal_ev(holding_period=HOLDING_PERIOD):
     outcome_evs = compute_evs(outcome_probabilities)
     contingency_table = contingency_pivot(outcome_evs, values='ev')  
 
-    title = f"EV, resolved within {holding_period} periods"
+    title = f"Unconditional EV, resolved within {holding_period} periods"
     plot_heatmap(contingency_table, title)
+    plt.show()
 
 
-def conditional_ev(holding_period=HOLDING_PERIOD, number_of_bins=N_BINS, indicator_id=INDICATOR_ID, percentile_bin=PERCENTILE_BIN):
+def conditional_ev(indicator_id, number_of_bins, percentile_bin, holding_period):
     """Compute and plot conditional EV for a given percentile bin of a given indicator for each threshold pair."""
     engine = get_engine()
     query = get_conditional_query()
@@ -38,12 +39,12 @@ def conditional_ev(holding_period=HOLDING_PERIOD, number_of_bins=N_BINS, indicat
     outcome_evs = compute_evs(outcome_probabilities)   
     contingency_table = contingency_pivot(outcome_evs, values='ev', indicator_id=indicator_id, percentile_bin=percentile_bin)     # Filtered for indicator ID and percentile bin at this stage
 
-    title = f"EV, Indicator {indicator_id}, Percentile Bin {percentile_bin} and resolved within {holding_period} periods"
+    title = f"EV, Indicator ID {indicator_id}, Percentile Bin {percentile_bin}, Resolved Within {holding_period} Periods"
     plot_heatmap(contingency_table, title)
     plt.show()
 
 
-def conditional_ev_grid(holding_period=HOLDING_PERIOD, number_of_bins=N_BINS, indicator_id=INDICATOR_ID):
+def conditional_ev_grid(indicator_id, number_of_bins, holding_period):
     """Compute and plot conditional EV for all percentile bins of a given indicator as a grid of heatmaps."""
     engine = get_engine()
     query = get_conditional_query()
@@ -52,11 +53,25 @@ def conditional_ev_grid(holding_period=HOLDING_PERIOD, number_of_bins=N_BINS, in
     outcome_evs = compute_evs(outcome_probabilities)
     contingencies = contingency_pivot_all_bins(outcome_evs, indicator_id=indicator_id, number_of_bins=number_of_bins)
 
-    title = f"EV by Percentile Bin — Indicator {indicator_id}, resolved within {holding_period} periods"
+    title = f"EV by Percentile Bin — Indicator ID {indicator_id}, Resolved Within {holding_period} Periods"
     plot_heatmap_grid(contingencies, title=title)
     plt.show()
 
 
 if __name__ == "__main__":
-    # conditional_ev()
-    conditional_ev_grid()
+    unconditional_ev(
+        holding_period=HOLDING_PERIOD
+    )
+
+    conditional_ev(
+        indicator_id=INDICATOR_ID, 
+        number_of_bins=N_BINS, 
+        percentile_bin=PERCENTILE_BIN, 
+        holding_period=HOLDING_PERIOD
+    )
+    
+    conditional_ev_grid(
+        indicator_id=INDICATOR_ID, 
+        number_of_bins=N_BINS, 
+        holding_period=HOLDING_PERIOD
+    )
