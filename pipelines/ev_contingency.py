@@ -13,7 +13,7 @@ HOLDING_PERIOD = 20
 
 INDICATOR_ID = 1
 PERCENTILE_BIN = 8
-N_BINS = 10
+N_BINS = 5
 
 
 def marginal_ev(holding_period=HOLDING_PERIOD):
