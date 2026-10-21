@@ -36,10 +36,12 @@ def main():
         populate_candles(engine, client, pair, interval, start, end)
 
     if REBUILD_OUTCOMES:
+        print("Computing outcomes from each candle...")
         for threshold in thresholds:
             populate_outcomes(engine, threshold)
 
     if REBUILD_RSI_INDICATOR:
+        print("Computing RSI for each candle...")
         populate_indicator_rsi(engine)
 
 
