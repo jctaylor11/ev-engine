@@ -13,14 +13,24 @@ def get_marginal_query():
         SELECT
             a.return_threshold AS threshold_a,
             b.return_threshold AS threshold_b,
-            COUNT(*) AS count_a_before_b,
+            COUNT(*) FILTER (WHERE
+                (a.candles_to_hit < b.candles_to_hit OR (a.candles_to_hit IS NOT NULL AND b.candles_to_hit IS NULL))
+                AND a.candles_to_hit <= :holding_period
+            ) AS count_a_before_b,
+            COALESCE(                                                       -- Trades that hit neither threshold are closed at market at the end of the holding period
+                SUM(SIGN(a.return_threshold) * (exit_candle.close_price / entry_candle.close_price - 1))   -- Signed by trade direction, so a short gains when price falls
+                    FILTER (WHERE
+                        (a.candles_to_hit IS NULL OR a.candles_to_hit > :holding_period)
+                        AND (b.candles_to_hit IS NULL OR b.candles_to_hit > :holding_period)
+                    ),
+                0                                                           -- SUM gives NULL when a pair has no unresolved trades
+            ) AS unresolved_return_sum,
             total_candles
         FROM outcomes a
         JOIN outcomes b ON a.candle_id = b.candle_id AND (a.return_threshold * b.return_threshold < 0)
+        JOIN candles entry_candle ON entry_candle.id = a.candle_id
+        LEFT JOIN candles exit_candle ON exit_candle.id = a.candle_id + :holding_period      -- LEFT JOIN as the final candles have no exit candle. Assumes contiguous candle IDs
         CROSS JOIN candle_count
-        WHERE (a.candles_to_hit < b.candles_to_hit
-            OR (a.candles_to_hit IS NOT NULL AND b.candles_to_hit IS NULL)) 
-            AND a.candles_to_hit <= :holding_period
         GROUP BY threshold_a, threshold_b, total_candles
         ORDER BY threshold_a;
     """)
@@ -55,7 +65,18 @@ def get_conditional_query():
             b.return_threshold AS threshold_b,
             ib.indicator_id,
             ib.percentile_bin,
-            COUNT(*) AS a_hit_before_b,
+            COUNT(*) FILTER (WHERE
+                (a.candles_to_hit < b.candles_to_hit OR (a.candles_to_hit IS NOT NULL AND b.candles_to_hit IS NULL))
+                AND a.candles_to_hit <= :holding_period
+            ) AS a_hit_before_b,
+            COALESCE(                                                       -- Trades that hit neither threshold are closed at market at the end of the holding period
+                SUM(SIGN(a.return_threshold) * (exit_candle.close_price / entry_candle.close_price - 1))   -- Signed by trade direction, so a short gains when price falls
+                    FILTER (WHERE
+                        (a.candles_to_hit IS NULL OR a.candles_to_hit > :holding_period)
+                        AND (b.candles_to_hit IS NULL OR b.candles_to_hit > :holding_period)
+                    ),
+                0                                                           -- SUM gives NULL when a pair has no unresolved trades
+            ) AS unresolved_return_sum,
             ibc.bin_candle_count
         FROM outcomes a
         JOIN indicator_binned ib 
@@ -66,11 +87,11 @@ def get_conditional_query():
         JOIN indicator_binned_counts ibc 
             ON ibc.percentile_bin = ib.percentile_bin 
             AND ibc.indicator_id = ib.indicator_id
-        WHERE 
-            (a.candles_to_hit < b.candles_to_hit 
-            OR (a.candles_to_hit IS NOT NULL AND b.candles_to_hit IS NULL))
-            AND a.candles_to_hit <= :holding_period
-        GROUP BY 
+        JOIN candles entry_candle
+            ON entry_candle.id = a.candle_id
+        LEFT JOIN candles exit_candle                                       -- LEFT JOIN as the final candles have no exit candle
+            ON exit_candle.id = a.candle_id + :holding_period              -- Assumes contiguous candle IDs
+        GROUP BY
             threshold_a, 
             threshold_b, 
             ib.indicator_id, 

@@ -1,5 +1,7 @@
 """Pipeline for marginal probability contingency analysis"""
 
+import tomllib
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -9,14 +11,14 @@ from analysis.contingency import compute_conditional_probability , compute_margi
 from visualisation.heatmap import plot_heatmap, plot_heatmap_grid
 
 
-HOLDING_PERIOD = 20
+HOLDING_PERIOD = 72
 
 INDICATOR_ID = 1
 PERCENTILE_BIN = 1
 N_BINS = 10
 
 
-def unconditional_ev(holding_period):
+def unconditional_ev(holding_period, date_range):
     """Compute and plot unconditional EV for each threshold pair."""
     engine = get_engine()
     query = get_marginal_query()
@@ -25,12 +27,12 @@ def unconditional_ev(holding_period):
     outcome_evs = compute_evs(outcome_probabilities)
     contingency_table = contingency_pivot(outcome_evs, values='ev')  
 
-    title = f"Unconditional EV, resolved within {holding_period} periods"
+    title = f"Unconditional EV, resolved within {holding_period} periods\n{date_range}"
     plot_heatmap(contingency_table, title)
     plt.show()
 
 
-def conditional_ev(indicator_id, number_of_bins, percentile_bin, holding_period):
+def conditional_ev(indicator_id, number_of_bins, percentile_bin, holding_period, date_range):
     """Compute and plot conditional EV for a given percentile bin of a given indicator for each threshold pair."""
     engine = get_engine()
     query = get_conditional_query()
@@ -39,12 +41,12 @@ def conditional_ev(indicator_id, number_of_bins, percentile_bin, holding_period)
     outcome_evs = compute_evs(outcome_probabilities)   
     contingency_table = contingency_pivot(outcome_evs, values='ev', indicator_id=indicator_id, percentile_bin=percentile_bin)     # Filtered for indicator ID and percentile bin at this stage
 
-    title = f"EV, Indicator ID {indicator_id}, Percentile Bin {percentile_bin}, Resolved Within {holding_period} Periods"
+    title = f"EV, Indicator ID {indicator_id}, Percentile Bin {percentile_bin}, Resolved Within {holding_period} Periods\n{date_range}"
     plot_heatmap(contingency_table, title)
     plt.show()
 
 
-def conditional_ev_grid(indicator_id, number_of_bins, holding_period):
+def conditional_ev_grid(indicator_id, number_of_bins, holding_period, date_range):
     """Compute and plot conditional EV for all percentile bins of a given indicator as a grid of heatmaps."""
     engine = get_engine()
     query = get_conditional_query()
@@ -53,25 +55,32 @@ def conditional_ev_grid(indicator_id, number_of_bins, holding_period):
     outcome_evs = compute_evs(outcome_probabilities)
     contingencies = contingency_pivot_all_bins(outcome_evs, indicator_id=indicator_id, number_of_bins=number_of_bins)
 
-    title = f"EV by Percentile Bin — Indicator ID {indicator_id}, Resolved Within {holding_period} Periods"
+    title = f"EV by Percentile Bin — Indicator ID {indicator_id}, Resolved Within {holding_period} Periods, {date_range}"
     plot_heatmap_grid(contingencies, title=title)
     plt.show()
 
 
 if __name__ == "__main__":
+    with open("config/config.toml", "rb") as config_file:
+        config = tomllib.load(config_file)
+    date_range = f"{config['data']['start']} to {config['data']['end']}"
+
     unconditional_ev(
-        holding_period=HOLDING_PERIOD
+        holding_period=HOLDING_PERIOD,
+        date_range=date_range
     )
 
     conditional_ev(
         indicator_id=INDICATOR_ID, 
         number_of_bins=N_BINS, 
         percentile_bin=PERCENTILE_BIN, 
-        holding_period=HOLDING_PERIOD
+        holding_period=HOLDING_PERIOD,
+        date_range=date_range
     )
     
     conditional_ev_grid(
         indicator_id=INDICATOR_ID, 
         number_of_bins=N_BINS, 
-        holding_period=HOLDING_PERIOD
+        holding_period=HOLDING_PERIOD,
+        date_range=date_range
     )

@@ -14,6 +14,7 @@ def compute_marginal_probability(df):
     # Extract total number of candles from dataframe, and use to calculate probably of threshold A hit before threshold B
     total_candles = df['total_candles'][0]
     df['probability'] = df['count_a_before_b'] / total_candles
+    df['unresolved_return'] = df['unresolved_return_sum'] / total_candles
 
     return df
 
@@ -31,6 +32,7 @@ def compute_conditional_probability(df):
     # Calculate the conditional probability that of the candles in the given percentile bin for the given indicator, 
     # the outcome was threshold A hit before threshold B
     df['probability'] = df['a_hit_before_b'] / df['bin_candle_count']
+    df['unresolved_return'] = df['unresolved_return_sum'] / df['bin_candle_count']
 
     return df
 
@@ -46,7 +48,7 @@ def compute_evs(df_outcomes):
         suffixes=['_A', '_B'],
         how='left'
     )
-    df_joined['ev'] = abs(df_joined['threshold_a_A']) * df_joined['probability_A'] + (-abs(df_joined['threshold_b_A']) * df_joined['probability_B'])
+    df_joined['ev'] = abs(df_joined['threshold_a_A']) * df_joined['probability_A'] + (-abs(df_joined['threshold_b_A']) * df_joined['probability_B']) + df_joined['unresolved_return_A']
 
     # Restore original column names after merge suffix applied so downstream functions remain agnostic
     df_joined = df_joined.rename(columns={
